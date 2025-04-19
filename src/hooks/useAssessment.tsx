@@ -1,9 +1,7 @@
 
 import { useState } from 'react';
-import { v4 as uuidv4 } from 'uuid';
+import { supabase } from '@/integrations/supabase/client';
 import { Assessment } from '@/types';
-import { analyzeAssessment } from '@/lib/api';
-import { saveAssessment } from '@/lib/utils/storage';
 
 interface UseAssessmentProps {
   userId: string;
@@ -19,27 +17,33 @@ export function useAssessment({ userId, type }: UseAssessmentProps) {
     try {
       setIsSubmitting(true);
       setError(null);
-      
-      // Call API to analyze assessment
-      const analysisResult = await analyzeAssessment(type, answers);
-      
-      // Create assessment record
-      const assessment: Assessment = {
-        id: uuidv4(),
-        userId,
-        type,
-        answers,
-        result: analysisResult,
-        createdAt: Date.now()
-      };
-      
-      // Save assessment
-      saveAssessment(assessment);
-      
-      // Update state
-      setResult(analysisResult);
+
+      // Call edge function to analyze assessment
+      const { data: analysisData, error: analysisError } = await supabase.functions.invoke('analyze-assessment', {
+        body: { type, answers }
+      });
+
+      if (analysisError) throw analysisError;
+
+      const { result: analysis } = analysisData;
+
+      // Save assessment to database
+      const { data: assessment, error: insertError } = await supabase
+        .from('assessments')
+        .insert({
+          user_id: userId,
+          type,
+          answers,
+          result: analysis
+        })
+        .select()
+        .single();
+
+      if (insertError) throw insertError;
+
+      setResult(analysis);
       return assessment;
-      
+
     } catch (error) {
       console.error('Error submitting assessment:', error);
       setError('Failed to analyze assessment. Please try again.');

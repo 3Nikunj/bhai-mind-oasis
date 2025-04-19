@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
@@ -7,6 +6,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useAssessment } from '@/hooks/useAssessment';
 import { User } from '@/types';
+import { toast } from '@/components/ui/use-toast';
 
 interface MentalHealthAssessmentProps {
   user: User;
@@ -17,7 +17,7 @@ export function MentalHealthAssessment({ user, onComplete }: MentalHealthAssessm
   const [currentStep, setCurrentStep] = useState(1);
   const [answers, setAnswers] = useState<Record<string, number>>({});
   
-  const { isSubmitting, result, submitAssessment } = useAssessment({
+  const { isSubmitting, submitAssessment } = useAssessment({
     userId: user.id,
     type: 'mental'
   });
@@ -60,14 +60,26 @@ export function MentalHealthAssessment({ user, onComplete }: MentalHealthAssessm
   };
 
   const handleSubmit = async () => {
-    const assessment = await submitAssessment(answers);
-    if (assessment && assessment.result) {
-      onComplete(assessment.result);
+    try {
+      const assessment = await submitAssessment(answers);
+      if (assessment && assessment.result) {
+        onComplete(assessment.result);
+        toast({
+          title: "Assessment Submitted",
+          description: "Your mental health assessment has been analyzed successfully.",
+        });
+      }
+    } catch (error) {
+      console.error('Error:', error);
+      toast({
+        title: "Submission Failed",
+        description: "Failed to submit assessment. Please try again.",
+        variant: "destructive"
+      });
     }
   };
 
   const getOptions = (questionId: string) => {
-    // Special options for specific questions
     if (questionId === 'q11') {
       return [
         { value: 0, label: 'Not difficult at all' },
@@ -93,7 +105,6 @@ export function MentalHealthAssessment({ user, onComplete }: MentalHealthAssessm
       ];
     }
     
-    // Default options for most questions
     return [
       { value: 0, label: 'Not at all' },
       { value: 1, label: 'Several days' },
