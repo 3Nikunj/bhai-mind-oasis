@@ -61,6 +61,19 @@ export default {
 					'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
+				},
+				// BHAI custom colors
+				bhai: {
+					primary: '#9b87f5',
+					secondary: '#7E69AB',
+					tertiary: '#6E59A5',
+					dark: '#1A1F2C',
+					light: '#D6BCFA',
+					soft: '#E5DEFF',
+					blue: '#D3E4FD',
+					bright: '#1EAEDB',
+					sky: '#33C3F0',
+					gray: '#aaadb0'
 				}
 			},
 			borderRadius: {
