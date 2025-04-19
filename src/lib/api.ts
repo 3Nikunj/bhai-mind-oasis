@@ -6,8 +6,19 @@ export const DEEPSEEK_API_KEY = "sk-or-v1-1ba0d712b0e28a62beeeda9f35fbc95c50a955
 const API_URL = "https://openrouter.ai/api/v1/chat/completions";
 
 // Function to get AI response
-export async function getAIResponse(messages: { role: string; content: string }[]) {
+export async function getAIResponse(messages: { role: string; content: string }[], userContext: string = '') {
   try {
+    // Add context to system message if available
+    const systemMessage = {
+      role: "system",
+      content: "You are BHAI (Behavioral Health Assistant Interface), a compassionate and supportive AI mental health assistant. Respond with empathy to users discussing mental health concerns like depression, anxiety, and stress. Provide evidence-based suggestions for coping strategies, such as CBT techniques, breathing exercises, or journaling. For severe issues, recommend professional help and provide crisis resources. Keep responses concise, warm, and focused on wellbeing. Never diagnose or replace professional care."
+    };
+
+    // If we have user context, add it to the system message
+    if (userContext) {
+      systemMessage.content += `\n\n${userContext}`;
+    }
+
     const response = await fetch(API_URL, {
       method: "POST",
       headers: {
@@ -19,10 +30,7 @@ export async function getAIResponse(messages: { role: string; content: string }[
       body: JSON.stringify({
         model: "deepseek/deepseek-chat-v3-0324:free",
         messages: [
-          {
-            role: "system",
-            content: "You are BHAI (Behavioral Health Assistant Interface), a compassionate and supportive AI mental health assistant. Respond with empathy to users discussing mental health concerns like depression, anxiety, and stress. Provide evidence-based suggestions for coping strategies, such as CBT techniques, breathing exercises, or journaling. For severe issues, recommend professional help and provide crisis resources. Keep responses concise, warm, and focused on wellbeing. Never diagnose or replace professional care."
-          },
+          systemMessage,
           ...messages
         ],
         temperature: 0.7,

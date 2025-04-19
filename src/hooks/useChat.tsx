@@ -1,9 +1,10 @@
 
 import { useState, useEffect } from 'react';
 import { v4 as uuidv4 } from 'uuid';
-import { Message, Conversation } from '@/types';
+import { Message, Conversation, Assessment } from '@/types';
 import { getAIResponse } from '@/lib/api';
-import { saveConversation, getConversationById } from '@/lib/utils/storage';
+import { saveConversation, getConversationById, getAssessmentsForUser } from '@/lib/utils/storage';
+import { toast } from '@/components/ui/use-toast';
 
 interface UseChatProps {
   userId: string;
@@ -31,6 +32,47 @@ export function useChat({ userId, conversationId }: UseChatProps) {
 
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [userContext, setUserContext] = useState<string>('');
+  const [isContextLoaded, setIsContextLoaded] = useState(false);
+
+  // Get user assessment history for context
+  useEffect(() => {
+    if (userId) {
+      const loadUserContext = async () => {
+        try {
+          // Get assessments for context
+          const assessments = getAssessmentsForUser(userId);
+          
+          if (assessments.length > 0) {
+            // Sort by creation date (newest first)
+            const sortedAssessments = assessments.sort((a, b) => b.createdAt - a.createdAt);
+            
+            // Create a context string with the most recent assessments
+            let contextString = "USER HISTORY (Do not directly mention that you have access to this information unless asked):\n";
+            
+            // Include up to 2 most recent assessments
+            const recentAssessments = sortedAssessments.slice(0, 2);
+            recentAssessments.forEach((assessment, index) => {
+              const date = new Date(assessment.createdAt).toLocaleDateString();
+              contextString += `\n[${date}] ${assessment.type.toUpperCase()} ASSESSMENT RESULT:\n${assessment.result}\n`;
+            });
+            
+            setUserContext(contextString);
+            setIsContextLoaded(true);
+          } else {
+            setUserContext('');
+            setIsContextLoaded(true);
+          }
+        } catch (error) {
+          console.error('Error loading user context:', error);
+          setUserContext('');
+          setIsContextLoaded(true);
+        }
+      };
+      
+      loadUserContext();
+    }
+  }, [userId]);
 
   // Save conversation to storage whenever it changes
   useEffect(() => {
@@ -65,9 +107,9 @@ export function useChat({ userId, conversationId }: UseChatProps) {
         content: msg.content
       }));
       
-      // Call AI API
+      // Call AI API with user context if available
       setIsLoading(true);
-      const aiResponse = await getAIResponse(apiMessages);
+      const aiResponse = await getAIResponse(apiMessages, userContext);
       
       // Add AI response message
       const aiMessage: Message = {
@@ -90,6 +132,11 @@ export function useChat({ userId, conversationId }: UseChatProps) {
     } catch (error) {
       console.error('Error sending message:', error);
       setError('Failed to send message. Please try again.');
+      toast({
+        title: 'Error',
+        description: 'Failed to send message. Please try again.',
+        variant: 'destructive'
+      });
     } finally {
       setIsLoading(false);
     }
@@ -114,6 +161,8 @@ export function useChat({ userId, conversationId }: UseChatProps) {
     isLoading,
     error,
     sendMessage,
-    clearConversation
+    clearConversation,
+    hasUserContext: !!userContext,
+    isContextLoaded
   };
 }

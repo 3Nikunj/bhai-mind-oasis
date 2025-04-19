@@ -1,13 +1,13 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useChat } from '@/hooks/useChat';
 import { User } from '@/types';
-import { Send } from 'lucide-react';
+import { Send, Database } from 'lucide-react';
+import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 
 interface ChatInterfaceProps {
   user: User;
@@ -22,7 +22,9 @@ export function ChatInterface({ user, conversationId }: ChatInterfaceProps) {
     messages,
     isLoading,
     error,
-    sendMessage
+    sendMessage,
+    hasUserContext,
+    isContextLoaded
   } = useChat({
     userId: user.id,
     conversationId
@@ -43,14 +45,30 @@ export function ChatInterface({ user, conversationId }: ChatInterfaceProps) {
 
   return (
     <div className="flex flex-col h-[80vh] border rounded-xl bg-white/50 backdrop-blur-sm shadow-lg">
-      <div className="p-4 border-b flex items-center gap-3">
-        <Avatar className="h-9 w-9 bg-bhai-primary text-white">
-          <AvatarFallback>AI</AvatarFallback>
-        </Avatar>
-        <div>
-          <h2 className="font-semibold">BHAI</h2>
-          <p className="text-sm text-muted-foreground">Behavioral Health Assistant Interface</p>
+      <div className="p-4 border-b flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <Avatar className="h-9 w-9 bg-bhai-primary text-white">
+            <AvatarFallback>AI</AvatarFallback>
+          </Avatar>
+          <div>
+            <h2 className="font-semibold">BHAI</h2>
+            <p className="text-sm text-muted-foreground">Behavioral Health Assistant Interface</p>
+          </div>
         </div>
+        
+        {isContextLoaded && hasUserContext && (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <div className="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs flex items-center gap-1">
+                <Database className="h-3 w-3" />
+                <span>Personalized</span>
+              </div>
+            </TooltipTrigger>
+            <TooltipContent side="bottom">
+              <p className="text-sm">Using your assessment history for more personalized responses</p>
+            </TooltipContent>
+          </Tooltip>
+        )}
       </div>
       
       <ScrollArea className="flex-1 p-4">
@@ -64,6 +82,11 @@ export function ChatInterface({ user, conversationId }: ChatInterfaceProps) {
               <p className="text-muted-foreground max-w-sm mt-2">
                 I'm here to support your mental wellbeing. Feel free to share what's on your mind or ask about mental health topics.
               </p>
+              {hasUserContext && (
+                <div className="mt-4 text-sm bg-green-50 p-3 rounded-lg border border-green-200 max-w-sm">
+                  <span className="font-medium text-green-800">Personalized Support Enabled:</span> Your responses will be tailored based on your assessment history.
+                </div>
+              )}
             </div>
           ) : (
             messages.map((message) => (
