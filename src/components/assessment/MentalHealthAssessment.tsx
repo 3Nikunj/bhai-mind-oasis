@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
@@ -7,6 +8,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { useAssessment } from '@/hooks/useAssessment';
 import { User } from '@/types';
 import { toast } from '@/components/ui/use-toast';
+import { Loader2 } from 'lucide-react';
 
 interface MentalHealthAssessmentProps {
   user: User;
@@ -61,16 +63,32 @@ export function MentalHealthAssessment({ user, onComplete }: MentalHealthAssessm
 
   const handleSubmit = async () => {
     try {
+      console.log("Submitting assessment with answers:", answers);
+      
       const assessment = await submitAssessment(answers);
+      console.log("Assessment submission result:", assessment);
+      
       if (assessment && assessment.result) {
-        onComplete(assessment.result);
         toast({
-          title: "Assessment Submitted",
-          description: "Your mental health assessment has been analyzed successfully.",
+          title: "Assessment Completed",
+          description: "Your assessment has been analyzed successfully.",
+        });
+        onComplete(assessment.result);
+      } else if (assessment && assessment.result === "") {
+        toast({
+          title: "Assessment Completed",
+          description: "Analysis was completed but no detailed recommendations were provided.",
+        });
+        onComplete("Your assessment has been received. We recommend discussing these results with a healthcare professional.");
+      } else {
+        toast({
+          title: "Submission Error",
+          description: "There was a problem with your assessment. Please try again.",
+          variant: "destructive"
         });
       }
     } catch (error) {
-      console.error('Error:', error);
+      console.error('Error submitting assessment:', error);
       toast({
         title: "Submission Failed",
         description: "Failed to submit assessment. Please try again.",
@@ -157,7 +175,7 @@ export function MentalHealthAssessment({ user, onComplete }: MentalHealthAssessm
         <Button 
           variant="outline" 
           onClick={handlePrevious}
-          disabled={currentStep === 1}
+          disabled={currentStep === 1 || isSubmitting}
         >
           Previous
         </Button>
@@ -165,7 +183,7 @@ export function MentalHealthAssessment({ user, onComplete }: MentalHealthAssessm
         {currentStep < questions.length ? (
           <Button 
             onClick={handleNext}
-            disabled={answers[currentQuestion.id] === undefined}
+            disabled={answers[currentQuestion.id] === undefined || isSubmitting}
           >
             Next
           </Button>
@@ -174,7 +192,12 @@ export function MentalHealthAssessment({ user, onComplete }: MentalHealthAssessm
             onClick={handleSubmit}
             disabled={answers[currentQuestion.id] === undefined || isSubmitting}
           >
-            {isSubmitting ? 'Analyzing...' : 'Submit'}
+            {isSubmitting ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Analyzing...
+              </>
+            ) : 'Submit'}
           </Button>
         )}
       </CardFooter>
