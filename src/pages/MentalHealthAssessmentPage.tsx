@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { MentalHealthAssessment } from '@/components/assessment/MentalHealthAssessment';
 import { AssessmentResult } from '@/components/results/AssessmentResult';
 import { useAuth } from '@/hooks/useAuth';
+import { toast } from '@/components/ui/use-toast';
 
 export default function MentalHealthAssessmentPage() {
   const { user, isAuthenticated } = useAuth();
@@ -18,8 +19,23 @@ export default function MentalHealthAssessmentPage() {
   }, [isAuthenticated, navigate]);
 
   const handleAssessmentComplete = (result: string) => {
+    if (!result) {
+      toast({
+        title: "Error",
+        description: "No assessment result was returned. Please try again.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    console.log("Assessment completed with result:", result.substring(0, 100) + "...");
     setResult(result);
     setAssessmentCompleted(true);
+    
+    toast({
+      title: "Assessment Completed",
+      description: "Your mental health assessment has been analyzed successfully.",
+    });
   };
 
   const handleCloseResult = () => {

@@ -24,11 +24,11 @@ serve(async (req) => {
     
     const supabase = createClient(supabaseUrl, supabaseKey);
     
-    // Fix RLS policies that might be causing infinite recursion
-    const { error } = await supabase.rpc('fix_rls_policies');
+    // Fix RLS policies for profiles table - remove policies with recursive queries
+    const { error: dropError } = await supabase.rpc('fix_profiles_rls_policies');
     
-    if (error) {
-      throw new Error(`Failed to fix RLS policies: ${error.message}`);
+    if (dropError) {
+      throw new Error(`Failed to fix RLS policies: ${dropError.message}`);
     }
     
     return new Response(JSON.stringify({ success: true, message: 'RLS policies fixed successfully' }), {
