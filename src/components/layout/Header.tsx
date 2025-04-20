@@ -6,7 +6,7 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { useAuth } from '@/hooks/useAuth';
-import { Menu, X } from 'lucide-react';
+import { Menu } from 'lucide-react';
 
 export function Header() {
   const { user, logout, isAuthenticated } = useAuth();
@@ -33,7 +33,11 @@ export function Header() {
   };
 
   const handleLogout = async () => {
-    await logout();
+    try {
+      await logout();
+    } catch (error) {
+      console.error('Logout error:', error);
+    }
   };
 
   return (
@@ -77,9 +81,9 @@ export function Header() {
               <DropdownMenuContent align="end">
                 <div className="flex items-center justify-start gap-2 p-2">
                   <div className="flex flex-col space-y-1 leading-none">
-                    <p className="font-medium">{user?.name}</p>
-                    <p className="text-xs text-muted-foreground">{user?.email}</p>
-                    <p className="text-xs text-muted-foreground capitalize">{user?.role}</p>
+                    <p className="font-medium">{user?.name || 'User'}</p>
+                    <p className="text-xs text-muted-foreground">{user?.email || ''}</p>
+                    <p className="text-xs text-muted-foreground capitalize">{user?.role || 'patient'}</p>
                   </div>
                 </div>
                 <DropdownMenuSeparator />
