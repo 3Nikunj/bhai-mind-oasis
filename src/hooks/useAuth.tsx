@@ -2,15 +2,16 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { User } from '@/types';
 import { registerUser, loginUser, logoutUser, getCurrentUser, createAnonymousUser } from '@/lib/auth';
+import { supabase } from '@/integrations/supabase/client';
 
 interface AuthContextProps {
   user: User | null;
   isAuthenticated: boolean;
   isLoading: boolean;
   login: (email: string, password: string) => Promise<User | null>;
-  register: (name: string, email: string, password: string, role: 'patient' | 'doctor') => Promise<User>;
+  register: (name: string, email: string, password: string, role: 'patient' | 'doctor') => Promise<User | null>;
   logout: () => Promise<void>;
-  createAnonymous: () => Promise<User>;
+  createAnonymous: () => Promise<User | null>;
 }
 
 const AuthContext = createContext<AuthContextProps | undefined>(undefined);
@@ -20,25 +21,51 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Check for existing user session on component mount
-    const checkAuth = () => {
-      const currentUser = getCurrentUser();
+    // Set up auth state listener
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        setIsLoading(true);
+        
+        if (session?.user) {
+          const userData = {
+            id: session.user.id,
+            name: session.user.user_metadata.name || 'User',
+            email: session.user.email || '',
+            role: session.user.user_metadata.role || 'patient',
+            isAnonymous: session.user.user_metadata.isAnonymous || false
+          };
+          setUser(userData);
+        } else {
+          setUser(null);
+        }
+        
+        setIsLoading(false);
+      }
+    );
+
+    // Check for existing session
+    const checkAuth = async () => {
+      const currentUser = await getCurrentUser();
       setUser(currentUser);
       setIsLoading(false);
     };
 
     checkAuth();
+
+    return () => {
+      subscription.unsubscribe();
+    };
   }, []);
 
   const login = async (email: string, password: string): Promise<User | null> => {
     try {
-      const user = loginUser(email, password);
-      if (user) {
-        setUser(user);
-      }
+      setIsLoading(true);
+      const user = await loginUser(email, password);
+      setIsLoading(false);
       return user;
     } catch (error) {
       console.error('Login error:', error);
+      setIsLoading(false);
       return null;
     }
   };
@@ -48,34 +75,41 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     email: string, 
     password: string, 
     role: 'patient' | 'doctor'
-  ): Promise<User> => {
+  ): Promise<User | null> => {
     try {
-      const user = registerUser(name, email, password, role);
-      setUser(user);
+      setIsLoading(true);
+      const user = await registerUser(name, email, password, role);
+      setIsLoading(false);
       return user;
     } catch (error) {
       console.error('Registration error:', error);
+      setIsLoading(false);
       throw error;
     }
   };
 
-  const createAnonymous = async (): Promise<User> => {
+  const createAnonymous = async (): Promise<User | null> => {
     try {
-      const anonUser = createAnonymousUser();
-      setUser(anonUser);
+      setIsLoading(true);
+      const anonUser = await createAnonymousUser();
+      setIsLoading(false);
       return anonUser;
     } catch (error) {
       console.error('Anonymous registration error:', error);
+      setIsLoading(false);
       throw error;
     }
   };
 
   const logout = async (): Promise<void> => {
     try {
-      logoutUser();
+      setIsLoading(true);
+      await logoutUser();
       setUser(null);
+      setIsLoading(false);
     } catch (error) {
       console.error('Logout error:', error);
+      setIsLoading(false);
     }
   };
 

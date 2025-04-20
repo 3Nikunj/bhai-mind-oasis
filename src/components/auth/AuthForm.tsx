@@ -1,5 +1,6 @@
 
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,6 +9,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { UserRole } from '@/types';
+import { toast } from '@/components/ui/sonner';
 
 export function AuthForm() {
   const [activeTab, setActiveTab] = useState<string>('login');
@@ -19,6 +21,7 @@ export function AuthForm() {
   const [isLoading, setIsLoading] = useState(false);
   
   const { login, register, createAnonymous } = useAuth();
+  const navigate = useNavigate();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -35,9 +38,13 @@ export function AuthForm() {
       
       if (!user) {
         setError('Invalid email or password');
+        return;
       }
-    } catch (error) {
-      setError('Failed to login. Please try again.');
+      
+      toast.success('Logged in successfully');
+      navigate('/');
+    } catch (error: any) {
+      setError(error.message || 'Failed to login. Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -52,11 +59,23 @@ export function AuthForm() {
       return;
     }
     
+    if (password.length < 6) {
+      setError('Password must be at least 6 characters long');
+      return;
+    }
+    
     try {
       setIsLoading(true);
-      await register(name, email, password, role);
-    } catch (error) {
-      setError('Failed to register. Please try again.');
+      const user = await register(name, email, password, role);
+      
+      if (user) {
+        toast.success('Account created successfully!');
+        navigate('/');
+      } else {
+        setError('Failed to create account. The email may already be in use.');
+      }
+    } catch (error: any) {
+      setError(error.message || 'Failed to register. Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -65,9 +84,16 @@ export function AuthForm() {
   const handleAnonymousLogin = async () => {
     try {
       setIsLoading(true);
-      await createAnonymous();
-    } catch (error) {
-      setError('Failed to continue anonymously. Please try again.');
+      const user = await createAnonymous();
+      
+      if (user) {
+        toast.success('Continuing anonymously');
+        navigate('/');
+      } else {
+        setError('Failed to continue anonymously. Please try again.');
+      }
+    } catch (error: any) {
+      setError(error.message || 'Failed to continue anonymously. Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -152,6 +178,7 @@ export function AuthForm() {
                   onChange={(e) => setPassword(e.target.value)}
                   required
                 />
+                <p className="text-sm text-gray-500">Password must be at least 6 characters</p>
               </div>
               
               <div className="space-y-2">
