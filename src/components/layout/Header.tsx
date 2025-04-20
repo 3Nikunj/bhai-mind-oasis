@@ -13,7 +13,8 @@ export function Header() {
   const location = useLocation();
   const [isOpen, setIsOpen] = useState(false);
 
-  const navigation = [
+  // Base navigation items for all users
+  const baseNavigation = [
     { name: 'Home', path: '/' },
     { name: 'Chat', path: '/chat' },
     { name: 'Mental Health Assessment', path: '/mental-health-assessment' },
@@ -21,6 +22,11 @@ export function Header() {
     { name: 'Resources', path: '/resources' },
     { name: 'History', path: '/history' },
   ];
+  
+  // Add doctor dashboard link if user is a doctor
+  const navigation = user?.role === 'doctor' 
+    ? [...baseNavigation, { name: 'Doctor Dashboard', path: '/doctor-dashboard' }]
+    : baseNavigation;
 
   const isActive = (path: string) => {
     return location.pathname === path;
@@ -77,6 +83,11 @@ export function Header() {
                   </div>
                 </div>
                 <DropdownMenuSeparator />
+                {user?.role === 'doctor' && (
+                  <DropdownMenuItem asChild>
+                    <Link to="/doctor-dashboard">Doctor Dashboard</Link>
+                  </DropdownMenuItem>
+                )}
                 <DropdownMenuItem asChild>
                   <Link to="/history">View History</Link>
                 </DropdownMenuItem>
