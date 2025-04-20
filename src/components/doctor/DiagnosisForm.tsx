@@ -6,6 +6,7 @@ import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/components/ui/use-toast';
+import { useAuth } from '@/hooks/useAuth';
 
 interface DiagnosisFormProps {
   patientId: string;
@@ -17,14 +18,26 @@ export function DiagnosisForm({ patientId, onSuccess }: DiagnosisFormProps) {
   const [notes, setNotes] = useState('');
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
+  const { user } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
+    if (!user) {
+      toast({
+        title: "Authentication Error",
+        description: "You must be logged in to add a diagnosis.",
+        variant: "destructive"
+      });
+      setLoading(false);
+      return;
+    }
+
     try {
       const { error } = await supabase.from('diagnoses').insert({
         patient_id: patientId,
+        doctor_id: user.id,
         condition,
         notes,
       });

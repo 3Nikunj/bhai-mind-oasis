@@ -6,6 +6,7 @@ import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/components/ui/use-toast';
+import { useAuth } from '@/hooks/useAuth';
 
 interface PrescriptionFormProps {
   patientId: string;
@@ -19,14 +20,26 @@ export function PrescriptionForm({ patientId, onSuccess }: PrescriptionFormProps
   const [validUntil, setValidUntil] = useState('');
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
+  const { user } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
+    if (!user) {
+      toast({
+        title: "Authentication Error",
+        description: "You must be logged in to add a prescription.",
+        variant: "destructive"
+      });
+      setLoading(false);
+      return;
+    }
+
     try {
       const { error } = await supabase.from('prescriptions').insert({
         patient_id: patientId,
+        doctor_id: user.id,
         medication,
         dosage,
         instructions,
