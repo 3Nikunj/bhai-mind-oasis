@@ -3,6 +3,7 @@ import { createContext, useContext, useState, useEffect, ReactNode } from 'react
 import { User } from '@/types';
 import { registerUser, loginUser, logoutUser, getCurrentUser, createAnonymousUser } from '@/lib/auth';
 import { supabase } from '@/integrations/supabase/client';
+import { toast } from '@/components/ui/sonner';
 
 interface AuthContextProps {
   user: User | null;
@@ -21,21 +22,43 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
+    console.log('Setting up auth state listener');
+    
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
+        console.log('Auth state changed:', event, session?.user?.id);
         setIsLoading(true);
         
         if (session?.user) {
-          const userData = {
-            id: session.user.id,
-            name: session.user.user_metadata.name || 'User',
-            email: session.user.email || '',
-            role: session.user.user_metadata.role || 'patient',
-            isAnonymous: session.user.user_metadata.isAnonymous || false
-          };
-          setUser(userData);
+          try {
+            // Get user details including profile data
+            const { data: profileData, error: profileError } = await supabase
+              .from('profiles')
+              .select('*')
+              .eq('id', session.user.id)
+              .maybeSingle();
+              
+            if (profileError && profileError.code !== 'PGRST116') {
+              console.error('Error fetching profile in auth change handler:', profileError);
+            }
+            
+            const userData = {
+              id: session.user.id,
+              name: profileData?.name || session.user.user_metadata.name || 'User',
+              email: session.user.email || '',
+              role: profileData?.role || session.user.user_metadata.role || 'patient',
+              isAnonymous: session.user.user_metadata.isAnonymous || false
+            };
+            
+            setUser(userData);
+            console.log('User set after auth change:', userData);
+          } catch (error) {
+            console.error('Error in auth change handler:', error);
+            setUser(null);
+          }
         } else {
+          console.log('No user in session, setting user to null');
           setUser(null);
         }
         
@@ -45,14 +68,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     // Check for existing session
     const checkAuth = async () => {
-      const currentUser = await getCurrentUser();
-      setUser(currentUser);
-      setIsLoading(false);
+      try {
+        console.log('Checking for existing auth session');
+        const currentUser = await getCurrentUser();
+        console.log('Current user from check:', currentUser);
+        setUser(currentUser);
+      } catch (error) {
+        console.error('Error checking auth:', error);
+        setUser(null);
+      } finally {
+        setIsLoading(false);
+      }
     };
 
     checkAuth();
 
     return () => {
+      console.log('Cleaning up auth subscription');
       subscription.unsubscribe();
     };
   }, []);
@@ -61,12 +93,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       setIsLoading(true);
       const user = await loginUser(email, password);
-      setIsLoading(false);
+      if (user) {
+        toast.success('Logged in successfully');
+      }
       return user;
-    } catch (error) {
-      console.error('Login error:', error);
-      setIsLoading(false);
+    } catch (error: any) {
+      console.error('Login error in hook:', error);
+      toast.error(error.message || 'Failed to login');
       return null;
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -79,12 +115,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       setIsLoading(true);
       const user = await registerUser(name, email, password, role);
-      setIsLoading(false);
+      if (user) {
+        toast.success('Account created successfully');
+      }
       return user;
-    } catch (error) {
-      console.error('Registration error:', error);
-      setIsLoading(false);
+    } catch (error: any) {
+      console.error('Registration error in hook:', error);
+      toast.error(error.message || 'Failed to register');
       throw error;
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -92,12 +132,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       setIsLoading(true);
       const anonUser = await createAnonymousUser();
-      setIsLoading(false);
+      if (anonUser) {
+        toast.success('Continuing anonymously');
+      }
       return anonUser;
-    } catch (error) {
-      console.error('Anonymous registration error:', error);
-      setIsLoading(false);
+    } catch (error: any) {
+      console.error('Anonymous login error in hook:', error);
+      toast.error(error.message || 'Failed to continue anonymously');
       throw error;
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -106,9 +150,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setIsLoading(true);
       await logoutUser();
       setUser(null);
-      setIsLoading(false);
-    } catch (error) {
-      console.error('Logout error:', error);
+      toast.success('Logged out successfully');
+    } catch (error: any) {
+      console.error('Logout error in hook:', error);
+      toast.error(error.message || 'Failed to logout');
+    } finally {
       setIsLoading(false);
     }
   };

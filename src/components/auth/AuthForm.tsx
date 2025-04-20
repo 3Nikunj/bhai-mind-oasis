@@ -10,6 +10,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { UserRole } from '@/types';
 import { toast } from '@/components/ui/sonner';
+import { Loader2 } from 'lucide-react';
 
 export function AuthForm() {
   const [activeTab, setActiveTab] = useState<string>('login');
@@ -34,6 +35,7 @@ export function AuthForm() {
     
     try {
       setIsLoading(true);
+      console.log('Attempting login with:', email);
       const user = await login(email, password);
       
       if (!user) {
@@ -41,9 +43,10 @@ export function AuthForm() {
         return;
       }
       
-      toast.success('Logged in successfully');
+      console.log('Login successful, navigating to home');
       navigate('/');
     } catch (error: any) {
+      console.error('Login form error:', error);
       setError(error.message || 'Failed to login. Please try again.');
     } finally {
       setIsLoading(false);
@@ -66,15 +69,18 @@ export function AuthForm() {
     
     try {
       setIsLoading(true);
+      console.log('Attempting registration with:', { name, email, role });
       const user = await register(name, email, password, role);
       
       if (user) {
-        toast.success('Account created successfully!');
+        console.log('Registration successful, navigating to home');
+        toast.success('Please check your email to confirm your account');
         navigate('/');
       } else {
         setError('Failed to create account. The email may already be in use.');
       }
     } catch (error: any) {
+      console.error('Registration form error:', error);
       setError(error.message || 'Failed to register. Please try again.');
     } finally {
       setIsLoading(false);
@@ -84,15 +90,18 @@ export function AuthForm() {
   const handleAnonymousLogin = async () => {
     try {
       setIsLoading(true);
+      setError(null);
+      console.log('Attempting anonymous login');
       const user = await createAnonymous();
       
       if (user) {
-        toast.success('Continuing anonymously');
+        console.log('Anonymous login successful, navigating to home');
         navigate('/');
       } else {
         setError('Failed to continue anonymously. Please try again.');
       }
     } catch (error: any) {
+      console.error('Anonymous login form error:', error);
       setError(error.message || 'Failed to continue anonymously. Please try again.');
     } finally {
       setIsLoading(false);
@@ -125,6 +134,7 @@ export function AuthForm() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
+                  disabled={isLoading}
                 />
               </div>
               <div className="space-y-2">
@@ -135,13 +145,20 @@ export function AuthForm() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
+                  disabled={isLoading}
                 />
               </div>
               
               {error && <p className="text-sm text-red-500">{error}</p>}
               
               <Button type="submit" className="w-full" disabled={isLoading}>
-                {isLoading ? 'Logging in...' : 'Login'}
+                {isLoading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Logging in...
+                  </>
+                ) : (
+                  'Login'
+                )}
               </Button>
             </form>
           </TabsContent>
@@ -156,6 +173,7 @@ export function AuthForm() {
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   required
+                  disabled={isLoading}
                 />
               </div>
               <div className="space-y-2">
@@ -167,6 +185,7 @@ export function AuthForm() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
+                  disabled={isLoading}
                 />
               </div>
               <div className="space-y-2">
@@ -177,6 +196,7 @@ export function AuthForm() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
+                  disabled={isLoading}
                 />
                 <p className="text-sm text-gray-500">Password must be at least 6 characters</p>
               </div>
@@ -189,11 +209,11 @@ export function AuthForm() {
                   className="flex space-x-4"
                 >
                   <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="patient" id="patient" />
+                    <RadioGroupItem value="patient" id="patient" disabled={isLoading} />
                     <Label htmlFor="patient">Patient</Label>
                   </div>
                   <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="doctor" id="doctor" />
+                    <RadioGroupItem value="doctor" id="doctor" disabled={isLoading} />
                     <Label htmlFor="doctor">Doctor</Label>
                   </div>
                 </RadioGroup>
@@ -202,7 +222,13 @@ export function AuthForm() {
               {error && <p className="text-sm text-red-500">{error}</p>}
               
               <Button type="submit" className="w-full" disabled={isLoading}>
-                {isLoading ? 'Creating Account...' : 'Create Account'}
+                {isLoading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Creating Account...
+                  </>
+                ) : (
+                  'Create Account'
+                )}
               </Button>
             </form>
           </TabsContent>
@@ -218,7 +244,13 @@ export function AuthForm() {
           </div>
         </div>
         <Button variant="outline" className="w-full" onClick={handleAnonymousLogin} disabled={isLoading}>
-          {isLoading ? 'Processing...' : 'Continue Anonymously'}
+          {isLoading ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Processing...
+            </>
+          ) : (
+            'Continue Anonymously'
+          )}
         </Button>
       </CardFooter>
     </Card>
