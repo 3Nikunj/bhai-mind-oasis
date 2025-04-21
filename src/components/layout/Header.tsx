@@ -21,6 +21,7 @@ export function Header() {
     { name: 'Behavioral Assessment', path: '/behavioral-assessment' },
     { name: 'Resources', path: '/resources' },
     { name: 'History', path: '/history' },
+    { name: 'Dashboard', path: '/dashboard' }, // Add Dashboard link for all users
   ];
   
   // Add doctor dashboard link if user is a doctor
@@ -92,6 +93,9 @@ export function Header() {
                     <Link to="/doctor-dashboard">Doctor Dashboard</Link>
                   </DropdownMenuItem>
                 )}
+                <DropdownMenuItem asChild>
+                  <Link to="/dashboard">View Dashboard</Link>
+                </DropdownMenuItem>
                 <DropdownMenuItem asChild>
                   <Link to="/history">View History</Link>
                 </DropdownMenuItem>
