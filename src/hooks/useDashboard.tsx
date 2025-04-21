@@ -19,6 +19,7 @@ export function useDashboard(userId: string) {
     queryKey: ['assessments', userId],
     queryFn: async () => {
       try {
+        console.log('Fetching assessments for user:', userId);
         const { data, error } = await supabase
           .from('assessments')
           .select('*')
@@ -30,15 +31,18 @@ export function useDashboard(userId: string) {
           throw error;
         }
 
+        console.log('Assessments fetched successfully:', data);
         return data as Assessment[];
       } catch (err) {
         console.error('Error in assessment fetch operation:', err);
-        // Return empty array instead of throwing to prevent query from staying in loading state
+        // Always return empty array to prevent query from staying in error state
         return [] as Assessment[];
       }
     },
     retry: 1, // Only retry once to prevent excessive requests on persistent errors
     staleTime: 5 * 60 * 1000, // 5 minutes
+    // Important: Don't enter error state, return empty data instead
+    useErrorBoundary: false,
   });
 
   // Show error toast only once

@@ -17,7 +17,7 @@ export function HealthTrends({ userId }: HealthTrendsProps) {
   const { mentalHealthAssessments, behavioralAssessments, isLoading, error } = useDashboard(userId);
 
   const mentalHealthData = useMemo(() => {
-    if (mentalHealthAssessments.length === 0) {
+    if (!mentalHealthAssessments?.length) {
       // Provide sample data for empty state
       return [
         { date: 'No data', value: 0 }
@@ -31,7 +31,7 @@ export function HealthTrends({ userId }: HealthTrendsProps) {
   }, [mentalHealthAssessments]);
 
   const behavioralHealthData = useMemo(() => {
-    if (behavioralAssessments.length === 0) {
+    if (!behavioralAssessments?.length) {
       // Provide sample data for empty state
       return [
         { date: 'No data', value: 0 }
@@ -84,8 +84,8 @@ export function HealthTrends({ userId }: HealthTrendsProps) {
     );
   }
 
-  const noMentalData = mentalHealthAssessments.length === 0;
-  const noBehavioralData = behavioralAssessments.length === 0;
+  const noMentalData = !mentalHealthAssessments || mentalHealthAssessments.length === 0;
+  const noBehavioralData = !behavioralAssessments || behavioralAssessments.length === 0;
 
   return (
     <div className="grid gap-6 md:grid-cols-2">
