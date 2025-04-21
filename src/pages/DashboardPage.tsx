@@ -7,6 +7,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useDashboard } from '@/hooks/useDashboard';
 import { HealthTrends } from '@/components/dashboard/HealthTrends';
 import { AssessmentSummary } from '@/components/dashboard/AssessmentSummary';
+import { AlertCircle } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 export default function DashboardPage() {
   const { user, isAuthenticated } = useAuth();
